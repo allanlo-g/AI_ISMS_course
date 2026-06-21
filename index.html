@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISMS / PIMS 日常管理與稽核準備的 AI 工具應用｜自動播放簡報</title>
+<style>
+  :root{
+    --navy:#0a1730;--navy2:#0f2347;--deep:#0a4a6b;--teal:#1c7293;
+    --seafoam:#00a896;--mint:#27e0b8;--gold:#f4b740;--ink:#eaf2fb;
+    --muted:#9fb4cf;--line:rgba(255,255,255,.14);--good:#27e0b8;--bad:#ff6b6b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+    background:#05101f;color:var(--ink);overflow:hidden;
+  }
+  #stage{position:fixed;inset:0;overflow:hidden;
+    background:radial-gradient(1200px 700px at 20% 10%,#103153 0%,#0a1730 45%,#060f1d 100%);}
+  #net{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
+
+  /* progress + dots */
+  #pbar{position:absolute;top:0;left:0;height:4px;width:0;z-index:30;
+    background:linear-gradient(90deg,var(--seafoam),var(--mint),var(--gold))}
+  #dots{position:absolute;top:18px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:30}
+  .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.22);transition:.3s}
+  .dot.on{background:var(--mint);transform:scale(1.25);box-shadow:0 0 10px var(--mint)}
+
+  /* scenes */
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+    align-items:center;text-align:center;padding:6vh 6vw;opacity:0;visibility:hidden;z-index:5;pointer-events:none}
+  .scene.active{opacity:1;visibility:visible;z-index:10;pointer-events:auto}
+  .scene .u{opacity:0;transform:translateY(28px)}
+  .scene.active .u{opacity:1;transform:none;transition:opacity .7s ease,transform .7s ease}
+  .scene.active .u:nth-child(1){transition-delay:.05s}
+  .scene.active .u:nth-child(2){transition-delay:.18s}
+  .scene.active .u:nth-child(3){transition-delay:.32s}
+  .scene.active .u:nth-child(4){transition-delay:.46s}
+  .scene.active .u:nth-child(5){transition-delay:.60s}
+  .scene.active .u:nth-child(6){transition-delay:.74s}
+
+  .eyebrow{letter-spacing:.26em;font-size:clamp(.7rem,1.4vw,.92rem);font-weight:700;color:var(--mint);text-transform:uppercase}
+  .big{font-size:clamp(1.9rem,5.4vw,4.2rem);font-weight:800;line-height:1.18;letter-spacing:.5px}
+  .hl{background:linear-gradient(100deg,var(--mint),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .mid{font-size:clamp(1.3rem,3.6vw,2.6rem);font-weight:800;line-height:1.3}
+  .for{font-size:clamp(1rem,2.2vw,1.5rem);font-weight:700;color:#9fd8d0;letter-spacing:1px}
+  .lead{max-width:900px;font-size:clamp(1rem,1.9vw,1.35rem);color:#c7d6e8;line-height:1.7}
+  .badges{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .badge{border:1px solid var(--line);background:rgba(255,255,255,.06);padding:9px 18px;border-radius:999px;
+    font-size:clamp(.8rem,1.5vw,1rem);font-weight:600;color:#dbe8f5}
+  .badge b{color:var(--mint)}
+
+  /* generic card rows */
+  .row{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;max-width:1100px}
+  .pcard{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:18px;padding:24px 22px;
+    width:240px;text-align:left}
+  .pcard .em{font-size:1.8rem;display:block;margin-bottom:8px}
+  .pcard h3{font-size:1.12rem;margin-bottom:6px;color:#fff}
+  .pcard p{font-size:.92rem;color:#bcd0e6}
+  .pcard .n{font-size:.74rem;letter-spacing:.16em;color:var(--gold);font-weight:700}
+
+  /* course chips */
+  .cgrid{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:16px;max-width:920px;width:100%}
+  .ccard{background:rgba(255,255,255,.05);border:1px solid var(--line);border-left:5px solid var(--bar);
+    border-radius:14px;padding:18px 20px;text-align:left}
+  .ccard .tg{font-size:.76rem;font-weight:700;letter-spacing:.1em;color:var(--bar2)}
+  .ccard h3{font-size:1.16rem;margin:5px 0 4px;color:#fff}
+  .ccard p{font-size:.9rem;color:#bcd0e6}
+
+  /* ===== CASE / AI CONSOLE ===== */
+  .case{width:100%;max-width:1080px;display:flex;flex-direction:column;gap:16px}
+  .casehead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center}
+  .pill{font-size:.8rem;font-weight:700;letter-spacing:.08em;color:#06231e;background:var(--mint);
+    padding:6px 14px;border-radius:999px}
+  .pill.iso{background:var(--gold)}
+  .casetitle{font-size:clamp(1.2rem,2.6vw,1.9rem);font-weight:800}
+  .scenario{font-size:clamp(.95rem,1.7vw,1.15rem);color:#bcd0e6}
+  .console{display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:left}
+  @media(max-width:820px){.console{grid-template-columns:1fr}}
+  .pane{background:rgba(6,16,30,.72);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    box-shadow:0 18px 50px rgba(0,0,0,.35)}
+  .pane .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);
+    font-size:.82rem;font-weight:700;color:#9fb4cf;background:rgba(255,255,255,.03)}
+  .pane .bar .d{width:10px;height:10px;border-radius:50%}
+  .d1{background:#ff6b6b}.d2{background:#f4b740}.d3{background:#27e0b8}
+  .promptbody,.respbody{padding:16px 18px;font-size:clamp(.86rem,1.45vw,1rem);line-height:1.7}
+  .promptbody{font-family:"SFMono-Regular",Consolas,"Microsoft JhengHei",monospace;color:#dbe8f5;min-height:150px}
+  .typed{white-space:pre-wrap}
+  .cursor{display:inline-block;width:9px;height:1.05em;background:var(--mint);vertical-align:-2px;
+    margin-left:2px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .respbody{color:#e7f0fb;opacity:0;transform:translateY(14px);transition:.55s ease}
+  .resp.show .respbody{opacity:1;transform:none}
+  .respbody .ai{font-weight:700;color:var(--mint);margin-bottom:6px;font-size:.92rem}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.92rem}
+  .kv b{color:#9fd8d0;font-weight:600;white-space:nowrap}
+  .miniT{width:100%;border-collapse:collapse;font-size:.84rem}
+  .miniT td{border:1px solid var(--line);padding:6px 8px;vertical-align:top}
+  .miniT tr:first-child td{background:rgba(39,224,184,.12);color:var(--mint);font-weight:700}
+  .stamp{display:inline-flex;align-items:center;gap:7px;margin-top:12px;font-weight:700;font-size:.85rem;
+    color:var(--good);border:1.5px dashed var(--good);padding:6px 12px;border-radius:8px}
+  .redline{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:.86rem;color:#ffd0d0;
+    background:rgba(255,107,107,.12);border-left:3px solid var(--bad);padding:9px 12px;border-radius:8px}
+
+  /* tools / audience */
+  .tg2{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:920px;width:100%;text-align:left}
+  @media(max-width:760px){.tg2{grid-template-columns:1fr}}
+  .panel{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:18px;padding:24px}
+  .panel h3{font-size:1.12rem;margin-bottom:14px;color:#fff}
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{padding:8px 15px;border-radius:999px;font-weight:600;font-size:.9rem;color:#06231e;
+    background:linear-gradient(135deg,#9fe8da,#cfead0)}
+  .ul{list-style:none}.ul li{padding:7px 0 7px 26px;position:relative;color:#dbe8f5;font-size:.96rem}
+  .ul li::before{content:"✓";position:absolute;left:0;color:var(--mint);font-weight:800}
+
+  /* instructor */
+  .avatar{width:108px;height:108px;border-radius:50%;display:grid;place-items:center;font-size:2.4rem;font-weight:800;
+    background:linear-gradient(135deg,var(--seafoam),var(--gold));color:#06231e;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+  .contact{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+  .contact a{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;
+    padding:13px 22px;border-radius:12px;border:1px solid var(--line);color:#fff;background:rgba(255,255,255,.05);transition:.25s}
+  .contact a:hover{background:var(--mint);color:#06231e;transform:translateY(-3px)}
+
+  /* controls */
+  #ctrl{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:10px;
+    background:rgba(6,16,30,.6);border:1px solid var(--line);border-radius:999px;padding:8px 12px;backdrop-filter:blur(8px)}
+  #ctrl button{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;font-size:1rem;
+    background:rgba(255,255,255,.08);color:#fff;transition:.2s;display:grid;place-items:center}
+  #ctrl button:hover{background:var(--mint);color:#06231e}
+  #ctrl .lbl{font-size:.8rem;color:var(--muted);min-width:54px;text-align:center}
+  .hint{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:25;color:var(--muted);
+    font-size:.78rem;opacity:.8}
+  @media(prefers-reduced-motion:reduce){.scene .u{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="net"></canvas>
+  <div id="pbar"></div>
+  <div id="dots"></div>
+
+  <!-- 0 COVER -->
+  <section class="scene" data-dur="6000">
+    <div class="u eyebrow">企業內訓 · 邀請課程 · 實務操作</div>
+    <div class="u big">ISMS / PIMS 日常管理與稽核準備的<br><span class="hl">AI 工具應用</span></div>
+    <div class="u for">For ISO 27001:2022 ／ 27701:2025</div>
+    <div class="u badges" style="margin-top:8px">
+      <span class="badge"><b>實作</b> 動手操作</span>
+      <span class="badge"><b>提示詞</b> 現場產出</span>
+      <span class="badge"><b>稽核</b> 證據可追溯</span>
+    </div>
+  </section>
+
+  <!-- 1 WHY -->
+  <section class="scene" data-dur="7000">
+    <div class="u eyebrow">這是一門實務操作課</div>
+    <div class="u mid">不是談 AI 概念，<span class="hl">是手把手用 AI 提示詞做事</span></div>
+    <div class="u lead">把繁瑣的日常資安與個資管理、耗時的第三方驗證準備，交給 AI 四力協助——更快、更穩、更可稽核；同時守住地端部署、人為複核與可追溯的治理紅線。</div>
+    <div class="u row" style="margin-top:10px">
+      <div class="pcard"><span class="em">📑</span><h3>日常做不完</h3><p>風險登錄簿、SoA、ROPA、個資清冊維護吃工時。</p></div>
+      <div class="pcard"><span class="em">🔎</span><h3>稽核很燒人</h3><p>證據分散、條款對應、不符合事項回覆年年重來。</p></div>
+      <div class="pcard"><span class="em">🛡️</span><h3>怕資料外洩</h3><p>地端 LLM＋人為複核＋可追溯，安全用 AI。</p></div>
+    </div>
+  </section>
+
+  <!-- 2 FOUR POWERS -->
+  <section class="scene" data-dur="7000">
+    <div class="u eyebrow">課程主軸</div>
+    <div class="u mid">AI 四力，貫穿管理與稽核</div>
+    <div class="u row" style="margin-top:12px">
+      <div class="pcard"><span class="n">POWER 01</span><span class="em">💬</span><h3>生成式 Chat AI</h3><p>起草、改寫、摘要、模擬稽核問答。</p></div>
+      <div class="pcard"><span class="n">POWER 02</span><span class="em">🗂️</span><h3>Cowork AI</h3><p>直接產出 Word／Excel／PPT 與對應表。</p></div>
+      <div class="pcard"><span class="n">POWER 03</span><span class="em">⌨️</span><h3>Code AI</h3><p>日誌分析、個資掃描、去識別化。</p></div>
+      <div class="pcard"><span class="n">POWER 04</span><span class="em">🤖</span><h3>AI Agent</h3><p>定時合規檢查、CAPA／DSAR 追蹤。</p></div>
+    </div>
+  </section>
+
+  <!-- 3 COURSES -->
+  <section class="scene" data-dur="7000">
+    <div class="u eyebrow">四堂課 · 每堂 3 小時</div>
+    <div class="u mid">ISMS × 2　＋　PIMS × 2</div>
+    <div class="u cgrid" style="margin-top:8px">
+      <div class="ccard" style="--bar:#0a4a6b;--bar2:#7fd0e8"><div class="tg">ISMS-1</div><h3>AI 輔助 ISMS 日常維運</h3><p>風險評鑑、SoA、日誌、事件、內稽準備。</p></div>
+      <div class="ccard" style="--bar:#1c7293;--bar2:#8fd6e6"><div class="tg">ISMS-2</div><h3>AI 輔助 ISO 27001 驗證準備</h3><p>條款—證據對應、稽核問答、NC／CAPA。</p></div>
+      <div class="ccard" style="--bar:#028090;--bar2:#7ee6d4"><div class="tg">PIMS-1</div><h3>AI 輔助 PIMS 個資日常管理</h3><p>ROPA、PIA、DSAR、委外與生命週期。</p></div>
+      <div class="ccard" style="--bar:#00a896;--bar2:#86f0d8"><div class="tg">PIMS-2</div><h3>AI 輔助 PIMS 驗證與 27701 轉版</h3><p>轉版差異、證據包、隱私稽核員視角。</p></div>
+    </div>
+  </section>
+
+  <!-- 4 CASE 1 ISMS-1 -->
+  <section class="scene case" data-type>
+    <div class="u casehead"><span class="pill">實作案例 ①</span><span class="pill iso">ISMS · ISO 27001</span></div>
+    <div class="u casetitle">用一句提示詞，做出「風險評鑑＋Annex A 對應」</div>
+    <div class="u scenario">情境：要為「導入雲端檔案協作服務」快速產出風險登錄簿。</div>
+    <div class="u console">
+      <div class="pane">
+        <div class="bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span>　提示詞 Prompt（可於地端 LLM 執行）</div>
+        <div class="promptbody"><span class="typed" data-text="你是 ISO 27001 風險分析師。針對「導入雲端檔案協作服務」這項資產，列出 5 條風險情境，每條用表格輸出：資產／威脅來源／弱點／影響(C/I/A)／可能性／衝擊／對應 Annex A 控制。繁體中文、務實可落地，不要杜撰我方未提供的內部系統名稱。"></span><span class="cursor"></span></div>
+      </div>
+      <div class="pane resp">
+        <div class="bar"><span class="d d3"></span>　AI 回應（示意節選）</div>
+        <div class="respbody">
+          <div class="ai">▌已產出 5 條風險，節選 3 條：</div>
+          <table class="miniT"><tr><td>資產</td><td>弱點</td><td>衝擊</td><td>Annex A</td></tr>
+          <tr><td>雲端帳號</td><td>未啟用 MFA</td><td>高</td><td>A.5.17／A.8.5</td></tr>
+          <tr><td>共享連結</td><td>連結未設期限</td><td>高</td><td>A.5.14／A.8.3</td></tr>
+          <tr><td>離職人員</td><td>權限未即時移除</td><td>高</td><td>A.5.18</td></tr></table>
+          <div class="stamp">✓ 人為複核控制編號後，匯入風險登錄簿</div>
+          <div class="redline"><span>🛡️</span><span>紅線：風險清單屬機密 → 於地端 LLM 產生；控制編號一律人工核對。</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 CASE 2 ISMS-2 -->
+  <section class="scene case" data-type>
+    <div class="u casehead"><span class="pill">實作案例 ②</span><span class="pill iso">ISMS · 稽核準備</span></div>
+    <div class="u casetitle">外稽前，10 秒生出「條款—證據對應表」</div>
+    <div class="u scenario">情境：Stage 2 前要盤點 Annex A 控制的佐證與常見缺失。</div>
+    <div class="u console">
+      <div class="pane">
+        <div class="bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span>　提示詞 Prompt</div>
+        <div class="promptbody"><span class="typed" data-text="依 ISO 27001:2022 Annex A，為 A.5.15 存取控制、A.8.15 日誌記錄、A.6.3 安全意識訓練，各列出稽核員可能要求的佐證文件/紀錄、查核重點與常見缺失，整理成「條款—證據對應表」。"></span><span class="cursor"></span></div>
+      </div>
+      <div class="pane resp">
+        <div class="bar"><span class="d d3"></span>　AI 回應（示意）</div>
+        <div class="respbody">
+          <table class="miniT"><tr><td>控制</td><td>佐證</td><td>常見缺失</td></tr>
+          <tr><td>A.5.15</td><td>權限申請/核准、定期複核紀錄</td><td>離職權限未移除</td></tr>
+          <tr><td>A.8.15</td><td>日誌設定、稽核軌跡樣本</td><td>日誌可被竄改</td></tr>
+          <tr><td>A.6.3</td><td>訓練計畫、簽到、測驗成績</td><td>缺成效佐證</td></tr></table>
+          <div class="stamp">✓ 稽核員視角複核：證據真實、可重現後採用</div>
+          <div class="redline"><span>🛡️</span><span>紅線：佐證可能含個資 → 去識別化；AI 彙整後人工驗真。</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 CASE 3 PIMS-1 -->
+  <section class="scene case" data-type>
+    <div class="u casehead"><span class="pill">實作案例 ③</span><span class="pill iso">PIMS · ISO 27701</span></div>
+    <div class="u casetitle">把業務口述，變成一筆合規「ROPA」</div>
+    <div class="u scenario">情境：要為「會員電子報行銷」建立個資處理活動清冊。</div>
+    <div class="u console">
+      <div class="pane">
+        <div class="bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span>　提示詞 Prompt（地端執行）</div>
+        <div class="promptbody"><span class="typed" data-text="你是個資保護專員。為「會員電子報行銷」產出一筆 ROPA：處理活動／目的／法源依據／個資類別／當事人／保存期限／接收者或委外／跨境傳輸／安全措施。繁體中文表格，僅放欄位範例，不要填入真實個資值。"></span><span class="cursor"></span></div>
+      </div>
+      <div class="pane resp">
+        <div class="bar"><span class="d d3"></span>　AI 回應（示意）</div>
+        <div class="respbody">
+          <div class="kv">
+            <b>目的</b><span>行銷推廣、活動通知</span>
+            <b>法源</b><span>當事人同意</span>
+            <b>個資類別</b><span>姓名、Email、消費偏好</span>
+            <b>保存期限</b><span>會員關係終止後 1 年</span>
+            <b>委外</b><span>電子報發送平台（處理者）</span>
+            <b>安全措施</b><span>加密傳輸、存取控管、去識別化</span>
+          </div>
+          <div class="stamp">✓ 人為複核後，納入 ROPA 與個資清冊</div>
+          <div class="redline"><span>🛡️</span><span>紅線：最小化＋目的限制；真實個資值不入公有雲 AI。</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 CASE 4 PIMS DSAR -->
+  <section class="scene case" data-type>
+    <div class="u casehead"><span class="pill">實作案例 ④</span><span class="pill iso">PIMS · 當事人權利</span></div>
+    <div class="u casetitle">收到「刪除個資」請求，AI 幫你跑完 DSAR</div>
+    <div class="u scenario">情境：當事人來信要求刪除個資，須在法定時限內回覆。</div>
+    <div class="u console">
+      <div class="pane">
+        <div class="bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span>　提示詞 Prompt</div>
+        <div class="promptbody"><span class="typed" data-text="協助處理一筆當事人「刪除個資」請求(DSAR)。規劃處理流程（受理→身分驗證→範圍比對→法律保留評估→刪除/匿名化→回覆），標出法定時限提醒，並草擬一封給當事人的回覆信。指出哪些欄位需去識別化後才可內部留存。"></span><span class="cursor"></span></div>
+      </div>
+      <div class="pane resp">
+        <div class="bar"><span class="d d3"></span>　AI 回應（示意）</div>
+        <div class="respbody">
+          <div class="ai">▌處理流程（含時限提醒）</div>
+          <div class="kv">
+            <b>① 受理</b><span>登錄請求、啟動時限計時</span>
+            <b>② 驗證</b><span>確認當事人身分，防冒用</span>
+            <b>③ 比對</b><span>跨系統盤點個資範圍</span>
+            <b>④ 保留</b><span>評估法定保存義務</span>
+            <b>⑤ 執行</b><span>刪除或匿名化</span>
+            <b>⑥ 回覆</b><span>產出當事人回覆信草稿</span>
+          </div>
+          <div class="stamp">✓ 交易統計需匿名化保留；回覆前主管覆核</div>
+          <div class="redline"><span>🛡️</span><span>紅線：刪除前確認法定保留；身分驗證避免冒用。</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 TOOLS + AUDIENCE -->
+  <section class="scene" data-dur="7500">
+    <div class="u eyebrow">不綁特定品牌</div>
+    <div class="u mid">學的是方法與治理，工具皆適用</div>
+    <div class="u tg2" style="margin-top:8px">
+      <div class="panel"><h3>🧠 適用的 AI 工具</h3>
+        <div class="chips"><span class="chip">ChatGPT</span><span class="chip">Gemini</span><span class="chip">Claude</span><span class="chip">Copilot</span><span class="chip">地端／自架 LLM</span></div>
+        <p style="margin-top:12px;color:#9fb4cf;font-size:.86rem">通用 AI 工具皆適用；高敏感個資與機密作業強調地端／自架 LLM 與人為複核。</p>
+      </div>
+      <div class="panel"><h3>👥 課程對象</h3>
+        <ul class="ul"><li>ISMS 資安管理者（推動小組、ISO 主負責人）</li><li>IT／MIS 人員（系統與資安維運）</li><li>部門管理者（文件窗口、流程主管）</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 INSTRUCTOR / CTA -->
+  <section class="scene" data-dur="9000">
+    <div class="u avatar">羅</div>
+    <div class="u mid" style="margin-top:6px">羅宇倫　Allan Lo 顧問</div>
+    <div class="u for" style="color:var(--mint);font-size:clamp(.95rem,2vw,1.25rem)">ISMS／PIMS 輔導顧問 · 第三方驗證稽核員</div>
+    <div class="u lead" style="max-width:760px">專長 ISO 27001 資安、ISO 27701 個資（PIMS）與企業 MIS 管理；以顧問與稽核員雙重視角，帶你把 AI 工具落地到日常管理與稽核準備。</div>
+    <div class="u contact" style="margin-top:6px">
+      <a href="mailto:allanlo.plus@gmail.com?subject=ISMS/PIMS AI 工具應用課程洽詢">✉️ allanlo.plus@gmail.com</a>
+      <a href="http://www.123hi.org" target="_blank" rel="noopener">🌐 ISMS 輔導資源分享 123hi.org</a>
+    </div>
+    <div class="u badges" style="margin-top:14px"><span class="badge"><b>歡迎洽詢</b>　企業內訓與課程合作</span></div>
+  </section>
+
+  <div class="hint" id="hint">自動播放中 · ⏯ 暫停／播放 · ← → 切換 · 空白鍵暫停 · ⛶ 全螢幕</div>
+  <div id="ctrl">
+    <button id="prev" title="上一個" aria-label="上一個">⏮</button>
+    <button id="play" title="暫停/播放" aria-label="暫停或播放">⏸</button>
+    <button id="next" title="下一個" aria-label="下一個">⏭</button>
+    <span class="lbl" id="counter">1 / 10</span>
+    <button id="full" title="全螢幕" aria-label="全螢幕">⛶</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var bar=document.getElementById('pbar');
+  var dotsWrap=document.getElementById('dots');
+  var counter=document.getElementById('counter');
+  var playBtn=document.getElementById('play');
+  var idx=0, paused=false, startT=0, dur=0, pauseAt=0, typeTimer=null;
+
+  scenes.forEach(function(_,i){var d=document.createElement('div');d.className='dot';dotsWrap.appendChild(d);});
+  var dots=[].slice.call(dotsWrap.children);
+
+  function sceneDur(sc){
+    if(sc.hasAttribute('data-type')){
+      var t=sc.querySelector('.typed').getAttribute('data-text');
+      return t.length*32 + 7200;
+    }
+    return +sc.getAttribute('data-dur')||7000;
+  }
+  function enter(i){
+    if(typeTimer){clearInterval(typeTimer);typeTimer=null;}
+    scenes.forEach(function(s){s.classList.remove('active');});
+    var sc=scenes[i];sc.classList.add('active');
+    dots.forEach(function(d,j){d.classList.toggle('on',j===i);});
+    counter.textContent=(i+1)+' / '+scenes.length;
+    var typed=sc.querySelector('.typed');
+    if(typed){
+      var text=typed.getAttribute('data-text');
+      typed.textContent='';
+      var resp=sc.querySelector('.resp'); if(resp)resp.classList.remove('show');
+      var k=0;
+      typeTimer=setInterval(function(){
+        if(paused)return;
+        k++; typed.textContent=text.slice(0,k);
+        if(k>=text.length){clearInterval(typeTimer);typeTimer=null;
+          if(resp)setTimeout(function(){resp.classList.add('show');},300);}
+      },32);
+    }
+    dur=sceneDur(sc); startT=performance.now();
+  }
+  function go(i){idx=(i+scenes.length)%scenes.length;enter(idx);}
+  function next(){go(idx+1);}
+  function prev(){go(idx-1);}
+
+  function tick(now){
+    if(!paused){
+      var el=now-startT, p=el/dur; if(p>1)p=1;
+      bar.style.width=(p*100)+'%';
+      if(el>=dur)next();
+    }
+    requestAnimationFrame(tick);
+  }
+  function setPaused(p){
+    paused=p;
+    if(p){pauseAt=performance.now();playBtn.textContent='▶';}
+    else{startT+=performance.now()-pauseAt;playBtn.textContent='⏸';}
+  }
+
+  playBtn.addEventListener('click',function(){setPaused(!paused);});
+  document.getElementById('next').addEventListener('click',function(){setPaused(false);next();});
+  document.getElementById('prev').addEventListener('click',function(){setPaused(false);prev();});
+  document.getElementById('full').addEventListener('click',function(){
+    var el=document.getElementById('stage');
+    if(!document.fullscreenElement){(el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el);}
+    else{document.exitFullscreen&&document.exitFullscreen();}
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'){setPaused(false);next();}
+    else if(e.key==='ArrowLeft'){setPaused(false);prev();}
+    else if(e.key===' '){e.preventDefault();setPaused(!paused);}
+  });
+
+  enter(0);
+  requestAnimationFrame(tick);
+
+  /* particle network */
+  var c=document.getElementById('net');if(c){var x=c.getContext('2d');var w,h,pts;var N=58;
+    function size(){w=c.width=c.offsetWidth;h=c.height=c.offsetHeight;}
+    function init(){size();pts=[];for(var i=0;i<N;i++)pts.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35});}
+    function draw(){x.clearRect(0,0,w,h);
+      for(var i=0;i<N;i++){var p=pts[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;
+        x.beginPath();x.arc(p.x,p.y,1.8,0,7);x.fillStyle='rgba(39,224,184,.85)';x.fill();}
+      for(var a=0;a<N;a++)for(var b=a+1;b<N;b++){var dx=pts[a].x-pts[b].x,dy=pts[a].y-pts[b].y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<140){x.beginPath();x.moveTo(pts[a].x,pts[a].y);x.lineTo(pts[b].x,pts[b].y);
+          x.strokeStyle='rgba(120,200,210,'+(1-d/140)*.35+')';x.lineWidth=1;x.stroke();}}
+      requestAnimationFrame(draw);}
+    init();draw();window.addEventListener('resize',init);
+  }
+})();
+</script>
+</body>
+</html>
